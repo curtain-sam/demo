@@ -1,5 +1,5 @@
 <template>
-  <div class="app">
+  <div class="app" @dblclick="showDoubleClickEasterEgg">
     <div id="bg-canvas"></div>
     <div class="hearts-container"></div>
     <div class="content" v-show="!showFireworks">
@@ -58,12 +58,12 @@ const showFireworks = ref(false)
 const isPlaying = ref(false)
 const bgMusic = ref(null)
 
-// 添加摇一摇检测相关变量
+// 修改摇一摇检测相关变量
 let lastTime = 0
 let lastX = 0
 let lastY = 0
 let lastZ = 0
-const SHAKE_THRESHOLD = 15
+const SHAKE_THRESHOLD = 10 // 降低阈值，使更容易触发
 
 const loveTexts = [
   "小车：",
@@ -126,7 +126,7 @@ function initTypewriter() {
     .start()
 }
 
-// 添加摇一摇检测函数
+// 修改摇一摇检测函数
 function handleShake(event) {
   const current = event.accelerationIncludingGravity
   if (!current) return
@@ -139,9 +139,9 @@ function handleShake(event) {
     const deltaY = Math.abs(current.y - lastY)
     const deltaZ = Math.abs(current.z - lastZ)
 
-    if (deltaX > SHAKE_THRESHOLD && deltaY > SHAKE_THRESHOLD || 
-        deltaX > SHAKE_THRESHOLD && deltaZ > SHAKE_THRESHOLD || 
-        deltaY > SHAKE_THRESHOLD && deltaZ > SHAKE_THRESHOLD) {
+    if ((deltaX > SHAKE_THRESHOLD && deltaY > SHAKE_THRESHOLD) || 
+        (deltaX > SHAKE_THRESHOLD && deltaZ > SHAKE_THRESHOLD) || 
+        (deltaY > SHAKE_THRESHOLD && deltaZ > SHAKE_THRESHOLD)) {
       showShakeEasterEgg()
     }
 
@@ -152,18 +152,35 @@ function handleShake(event) {
   }
 }
 
-// 添加彩蛋显示函数
+// 修改彩蛋显示函数
 function showShakeEasterEgg() {
+  showEasterEgg('感谢小车打赏的五毛钱❤️')
+}
+
+// 添加双击彩蛋函数
+function showDoubleClickEasterEgg() {
+  showEasterEgg('获得抱抱体验一次（立即执行）')
+}
+
+// 统一的彩蛋显示函数
+function showEasterEgg(text) {
+  const existingEasterEgg = document.querySelector('.easter-egg')
+  if (existingEasterEgg) {
+    document.body.removeChild(existingEasterEgg)
+  }
+
   const easterEgg = document.createElement('div')
   easterEgg.className = 'easter-egg animate__animated animate__bounceIn'
-  easterEgg.innerHTML = '感谢小车打赏的五毛钱❤️'
+  easterEgg.innerHTML = text
   document.body.appendChild(easterEgg)
 
   setTimeout(() => {
     easterEgg.classList.remove('animate__bounceIn')
     easterEgg.classList.add('animate__bounceOut')
     setTimeout(() => {
-      document.body.removeChild(easterEgg)
+      if (document.body.contains(easterEgg)) {
+        document.body.removeChild(easterEgg)
+      }
     }, 1000)
   }, 2000)
 }
@@ -184,9 +201,21 @@ onMounted(() => {
     initTypewriter()
   }, 1000)
 
-  // 添加摇一摇事件监听
+  // 修改摇一摇事件监听，添加权限请求
   if (window.DeviceMotionEvent) {
-    window.addEventListener('devicemotion', handleShake)
+    if (typeof DeviceMotionEvent.requestPermission === 'function') {
+      // iOS 13+ 需要请求权限
+      DeviceMotionEvent.requestPermission()
+        .then(response => {
+          if (response === 'granted') {
+            window.addEventListener('devicemotion', handleShake)
+          }
+        })
+        .catch(console.error)
+    } else {
+      // 其他设备直接添加监听
+      window.addEventListener('devicemotion', handleShake)
+    }
   }
 })
 
@@ -331,6 +360,9 @@ html, body {
   .easter-egg {
     font-size: 18px;
     padding: 15px 30px;
+    width: 80%;
+    white-space: normal;
+    text-align: center;
   }
 }
 
@@ -698,7 +730,7 @@ button {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   padding: 20px 40px;
   border-radius: 50px;
   font-size: 24px;
@@ -708,5 +740,6 @@ button {
   font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
   white-space: nowrap;
   animation-duration: 1s;
+  pointer-events: none;
 }
 </style> 
