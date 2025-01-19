@@ -58,6 +58,13 @@ const showFireworks = ref(false)
 const isPlaying = ref(false)
 const bgMusic = ref(null)
 
+// 添加摇一摇检测相关变量
+let lastTime = 0
+let lastX = 0
+let lastY = 0
+let lastZ = 0
+const SHAKE_THRESHOLD = 15
+
 const loveTexts = [
   "亲爱的小车：",
   "从遇见你的第一天起",
@@ -123,6 +130,48 @@ function initTypewriter() {
     .start()
 }
 
+// 添加摇一摇检测函数
+function handleShake(event) {
+  const current = event.accelerationIncludingGravity
+  if (!current) return
+
+  const currentTime = new Date().getTime()
+  const diffTime = currentTime - lastTime
+
+  if (diffTime > 100) {
+    const deltaX = Math.abs(current.x - lastX)
+    const deltaY = Math.abs(current.y - lastY)
+    const deltaZ = Math.abs(current.z - lastZ)
+
+    if (deltaX > SHAKE_THRESHOLD && deltaY > SHAKE_THRESHOLD || 
+        deltaX > SHAKE_THRESHOLD && deltaZ > SHAKE_THRESHOLD || 
+        deltaY > SHAKE_THRESHOLD && deltaZ > SHAKE_THRESHOLD) {
+      showShakeEasterEgg()
+    }
+
+    lastTime = currentTime
+    lastX = current.x
+    lastY = current.y
+    lastZ = current.z
+  }
+}
+
+// 添加彩蛋显示函数
+function showShakeEasterEgg() {
+  const easterEgg = document.createElement('div')
+  easterEgg.className = 'easter-egg animate__animated animate__bounceIn'
+  easterEgg.innerHTML = '感谢小车打赏的五毛钱❤️'
+  document.body.appendChild(easterEgg)
+
+  setTimeout(() => {
+    easterEgg.classList.remove('animate__bounceIn')
+    easterEgg.classList.add('animate__bounceOut')
+    setTimeout(() => {
+      document.body.removeChild(easterEgg)
+    }, 1000)
+  }, 2000)
+}
+
 onMounted(() => {
   const container = document.getElementById('bg-canvas')
   ;({ scene: bgScene, renderer: bgRenderer, camera: bgCamera, animate: bgAnimate } = initBackground(container))
@@ -138,6 +187,11 @@ onMounted(() => {
   setTimeout(() => {
     initTypewriter()
   }, 1000)
+
+  // 添加摇一摇事件监听
+  if (window.DeviceMotionEvent) {
+    window.addEventListener('devicemotion', handleShake)
+  }
 })
 
 onUnmounted(() => {
@@ -150,6 +204,10 @@ onUnmounted(() => {
   if (typewriter) {
     typewriter.stop()
     typewriter = null
+  }
+  // 移除摇一摇事件监听
+  if (window.DeviceMotionEvent) {
+    window.removeEventListener('devicemotion', handleShake)
   }
 })
 
@@ -176,24 +234,176 @@ function toggleMusic() {
 </script>
 
 <style>
-@import 'animate.css';
-@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap');
+/* 在样式的最前面添加全局滚动控制 */
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  -webkit-overflow-scrolling: none;
+}
 
 .app {
-  width: 100vw;
-  height: 100vh;
-  position: relative;
+  width: 100%;
+  height: 100%;
+  position: fixed;
   overflow: hidden;
   background: #000;
   font-family: 'Dancing Script', cursive;
+  touch-action: none;
+  -webkit-overflow-scrolling: none;
+  left: 0;
+  top: 0;
+}
+
+@import 'animate.css';
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap');
+
+/* 添加移动端媒体查询 */
+@media screen and (max-width: 768px) {
+  .content {
+    padding: 0;
+  }
+
+  .message-container {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .message-box {
+    min-width: unset;
+    width: 85vw;
+    padding: 30px 20px;
+    font-size: 24px;
+    max-height: 70vh;
+    overflow: hidden;
+  }
+
+  .typewriter {
+    font-size: 20px;
+    min-height: 36px;
+    margin: 10px 0;
+  }
+
+  .buttons {
+    margin-top: 30px;
+    gap: 20px;
+    flex-direction: column;
+  }
+
+  button {
+    padding: 15px 30px;
+    font-size: 20px;
+    width: 200px;
+    margin: 0 auto;
+  }
+
+  .love-text {
+    font-size: 48px;
+    padding: 30px;
+    gap: 15px;
+  }
+
+  .heart {
+    font-size: 42px;
+  }
+
+  .love-date {
+    font-size: 18px;
+  }
+
+  .music-control {
+    top: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+  }
+
+  .love-message {
+    margin-top: -10vh;
+    width: 90vw;
+  }
+
+  .easter-egg {
+    font-size: 18px;
+    padding: 15px 30px;
+  }
+}
+
+/* 添加更小屏幕的适配 */
+@media screen and (max-width: 380px) {
+  .message-box {
+    padding: 25px 15px;
+  }
+
+  .typewriter {
+    font-size: 18px;
+    min-height: 32px;
+  }
+
+  button {
+    padding: 12px 25px;
+    font-size: 18px;
+    width: 180px;
+  }
+
+  .love-text {
+    font-size: 36px;
+    padding: 25px;
+  }
+
+  .heart {
+    font-size: 32px;
+  }
+}
+
+/* 横屏适配 */
+@media screen and (max-height: 600px) and (orientation: landscape) {
+  .content {
+    padding: 0;
+    align-items: center;
+  }
+
+  .message-container {
+    margin: 0;
+  }
+
+  .message-box {
+    padding: 20px 30px;
+  }
+
+  .typewriter {
+    min-height: 32px;
+    font-size: 20px;
+  }
+
+  .buttons {
+    margin-top: 20px;
+  }
+
+  .love-message {
+    margin-top: 0;
+  }
+
+  .love-text {
+    padding: 20px;
+    font-size: 42px;
+  }
 }
 
 #bg-canvas {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   z-index: 1;
 }
 
@@ -202,40 +412,47 @@ function toggleMusic() {
   top: 0;
   left: 0;
   z-index: 2;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
   color: white;
-  padding-bottom: 45vh;
+  padding: 0;
 }
 
 .message-container {
   perspective: 1000px;
   transform-style: preserve-3d;
-  margin-top: -25vh;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  touch-action: none;
+  -webkit-overflow-scrolling: none;
+  overflow: hidden;
+  transform: translateY(-10%);
 }
 
 .message-box {
   text-align: center;
   font-size: 32px;
   padding: 40px 60px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
   border-radius: 30px;
   backdrop-filter: blur(10px);
-  box-shadow: 0 0 30px rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.05);
   transform: translateZ(0);
   transition: all 0.5s ease;
   min-width: 600px;
   max-width: 80vw;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .message-box.show-buttons {
   transform: translateZ(50px);
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 40px rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 40px rgba(255, 255, 255, 0.08);
 }
 
 .typewriter {
@@ -348,7 +565,7 @@ button {
   transform-style: preserve-3d;
   transform: perspective(1000px) translateZ(0);
   transition: transform 0.5s ease;
-  margin-top: -20vh;
+  margin: 0; /* 移除上边距 */
 }
 
 .love-message:hover {
@@ -465,5 +682,33 @@ button {
 @keyframes glow {
   0% { text-shadow: 0 0 20px #fff, 0 0 30px #ff69b4, 0 0 40px #ff69b4; }
   100% { text-shadow: 0 0 10px #fff, 0 0 20px #da70d6, 0 0 30px #da70d6; }
+}
+
+/* 确保所有可滚动容器都禁用滚动 */
+.message-container,
+.typewriter,
+.buttons,
+.fireworks-container,
+.love-message {
+  touch-action: none;
+  -webkit-overflow-scrolling: none;
+  overflow: hidden;
+}
+
+.easter-egg {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 20px 40px;
+  border-radius: 50px;
+  font-size: 24px;
+  color: #ff69b4;
+  z-index: 9999;
+  box-shadow: 0 0 30px rgba(255, 105, 180, 0.5);
+  font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+  white-space: nowrap;
+  animation-duration: 1s;
 }
 </style> 
