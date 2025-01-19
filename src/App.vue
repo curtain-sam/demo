@@ -275,6 +275,7 @@ html, body {
     display: flex;
     justify-content: center;
     align-items: center;
+    transform: translateY(-200px);
   }
 
   .message-box {
@@ -373,6 +374,7 @@ html, body {
 
   .message-container {
     margin: 0;
+    transform: translateY(-200px);
   }
 
   .message-box {
@@ -431,7 +433,7 @@ html, body {
   touch-action: none;
   -webkit-overflow-scrolling: none;
   overflow: hidden;
-  transform: translateY(-10%);
+  transform: translateY(-200px);
 }
 
 .message-box {
